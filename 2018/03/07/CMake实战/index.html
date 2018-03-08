@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.0.5" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.0.5" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.0.5',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+<meta name="description" content="2.3 cmkae基本语法和语法使用cmake很简单,build过程被创建的CMakeLists.txt文件所控制,包含在子目录中的CMakelists.txt文件，CMakeLists文件应该描述了项目的结构,基本的命令的形式如下:  command (args ...) args 是用空白符分开的参数列表(参数如果包含空格，就用双引号包含下),CMake是大小写不敏感的(2.2之后)所以你可以">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CMake实战">
+<meta property="og:url" content="http://yoursite.com/2018/03/07/CMake实战/index.html">
+<meta property="og:site_name" content="cmd-c">
+<meta property="og:description" content="2.3 cmkae基本语法和语法使用cmake很简单,build过程被创建的CMakeLists.txt文件所控制,包含在子目录中的CMakelists.txt文件，CMakeLists文件应该描述了项目的结构,基本的命令的形式如下:  command (args ...) args 是用空白符分开的参数列表(参数如果包含空格，就用双引号包含下),CMake是大小写不敏感的(2.2之后)所以你可以">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg">
+<meta property="og:image" content="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg">
+<meta property="og:image" content="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg">
+<meta property="og:updated_time" content="2018-03-07T10:35:31.629Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CMake实战">
+<meta name="twitter:description" content="2.3 cmkae基本语法和语法使用cmake很简单,build过程被创建的CMakeLists.txt文件所控制,包含在子目录中的CMakelists.txt文件，CMakeLists文件应该描述了项目的结构,基本的命令的形式如下:  command (args ...) args 是用空白符分开的参数列表(参数如果包含空格，就用双引号包含下),CMake是大小写不敏感的(2.2之后)所以你可以">
+<meta name="twitter:image" content="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg">
+
+
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2018/03/07/CMake实战/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+  <title>CMake实战 | cmd-c</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"> <div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">cmd-c</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">cmd-v</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-home"></i> <br />Home</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-user"></i> <br />About</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />Tags</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-th"></i> <br />Categories</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />Archives</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-sitemap">
+          <a href="/sitemap.xml" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br />Sitemap</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />Commonweal 404</a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+  
+
+
+
+ </div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/07/CMake实战/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhouquan">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="cmd-c">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CMake实战</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-07T18:32:34+08:00">2018-03-07</time>
+            
+
+            
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="2-3-cmkae基本语法和语法"><a href="#2-3-cmkae基本语法和语法" class="headerlink" title="2.3 cmkae基本语法和语法"></a>2.3 cmkae基本语法和语法</h2><p>使用cmake很简单,build过程被创建的CMakeLists.txt文件所控制,包含在子目录中的CMakelists.txt文件，CMakeLists文件应该描述了项目的结构,基本的命令的形式如下: </p>
+<p><code>command (args ...)</code></p>
+<p>args 是用空白符分开的参数列表(参数如果包含空格，就用双引号包含下),CMake是大小写不敏感的(2.2之后)<br>所以你可以使用command或者COMMAND</p>
+<p>CMake支持简单的变量比如字符串或者字符串列表，使用${变量}来引用, 多个参数可以使用<code>set</code>命令打包到列表中去，所有的其他命令会展开用空白符分隔来展开列表</p>
+<p>举个栗子 <img src="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg" alt="举个栗子"> </p>
+<p><code>set (Foo a b)</code> 命令的结果是将a,b,c包进Foo变量，所以如果传递<code>Foo</code>到另外一个命令<code>COMMAND(${Foo})</code>和<code>COMMAND(a b c)</code>是一样的</p>
+<p>如果你想要将列表传递给命令作为一个单独的参数，只需要简单的用双引号包括以下就行</p>
+<p>再举个栗子 <img src="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg" alt="再举个栗子"> </p>
+<p><code>COMMAND(&quot;${Foo}&quot;)</code> 和 <code>COMMAND(&quot;a b c&quot;)</code>是一样的效果</p>
+<p>系统环境变量和Windows的注册变量(注册表啥的吧，不懂:&lt;)在CMake中都可以访问，要访问系统环境变量使用<code>$ENV{变量}</code>语法，CMake还可以在很多不同的命令中使用<code>[HKEY_CURRENT_URSER\\Software\\path1\\path2;key]</code>引用注册变量,这些路径是注册树和key</p>
+<h2 id="2-4-CMake-Hello-World"><a href="#2-4-CMake-Hello-World" class="headerlink" title="2.4 CMake Hello World"></a>2.4 CMake Hello World</h2><p>咱们来看个简单的吧:), 为了从源码中编译出一个可执行文件，CMake需要一个CMakeLists.txt文件，文件中需要包含两行:</p>
+<p><code>project (Hello)
+add_executable (Hello Hello.c)</code></p>
+<p>为了编译出Hello可执行文件，咱们运行CMake来生成Makefiles或者巨硬的项目文件。</p>
+<ul>
+<li><code>project</code>命令标识了结果的工作空间应该叫什么</li>
+<li><code>add_executable</code>命令向编译程序添加了一个可执行的目标</li>
+</ul>
+<p>如果你的项目需要不是特别多的源文件，只需要简单的修改下add_executable就好啦:</p>
+<p><code>add_executable(Hello Hello.c File2.c File3.c File4.c)</code></p>
+<p><code>add_executable</code>只是CMake众多命令中的一件。咱们来看看一个更不清真的栗子:</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(<span class="number">2.6</span>)</span><br><span class="line"><span class="keyword">project</span> (HELLO)</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> (HELLO_SRCS Hello.c File2.c File3.c)</span><br><span class="line"><span class="keyword">if</span> (WIN32)</span><br><span class="line">	<span class="keyword">set</span> (HELLO_SRCS <span class="variable">$&#123;HELLO_SRCS&#125;</span> WinSupport.c) </span><br><span class="line"><span class="keyword">else</span> ()</span><br><span class="line">	<span class="keyword">set</span> (HELLO_SRCS <span class="variable">$&#123;HELLO_SRCS&#125;</span> UnixSupport.c) </span><br><span class="line"><span class="keyword">endif</span> ()</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span> (HELLO <span class="variable">$&#123;HELLO_SRCS&#125;</span>)</span><br><span class="line"><span class="comment">#look for thr Tcl library</span></span><br><span class="line"><span class="keyword">find_library</span> (TCL_LIBRARY NAMES tcl tcl84 tcl83 tcl82 tcl80 PATHS /usr/lib /usr/local/lib)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (TCL_LIBRARY) </span><br><span class="line">	target_link_library(Hello <span class="variable">$&#123;TCL_LIBRARY&#125;</span>) </span><br><span class="line"><span class="keyword">endif</span> ()</span><br></pre></td></tr></table></figure>
+<p>这个栗子里边使用<code>set</code>命令来打包参数列表，使用<code>if</code>命令来添加各自平台的支持文件，最后使用了<code>add_executable</code>命令来编译可执行文件，<code>find_library</code>命令搜索TCL_LIBRARY使用了不同的名称和不同的路径，使用一个<code>if</code>命令来判断TCL_LIBRARY是否找到，如果找到了就把他link到可执行文件的target中，注意<code>#</code>作为一个注释来使用，从<code>#</code>到行尾都是注释部分</p>
+<h2 id="2-5-如何运行CMake"><a href="#2-5-如何运行CMake" class="headerlink" title="2.5 如何运行CMake"></a>2.5 如何运行CMake</h2><p>只要你系统里边装了CMake，使用它来编译项目很简单，CMake用两个主要的目录来编译项目:源码目录和二进制目录。源码目录里边包含源码和CMakeLists.txt文件。二进制目录就是放可执行文件，库，目标文件这些东西的，一般来说，CMake不会在源码目录里边写东西，只在二进制目录里边干活，如果你想让CMake在源码目录里边写东西的话:&lt;(一般不要这么做吧，不明白什么时候需要这么干)，就把源码目录和二进制目录设置成一样的就妥了这个就是–in-source-build。相对的就是out-source-build。</p>
+<p>CMake在所有平台上两种方式都是资瓷的。就是说你用out-source-build的时候你可以简单地删除掉所有编译期间生产的文件。拥有不同的编译路径和源码路径让资瓷对同一份代码的多个编译很简单，这个功能在你想要用不同的编译选项编译同一份代码的时候很有用。CMake还有一个QT的GUI(蛤，我为什么要用这个，反正我不用，我就不翻了)</p>
+<h4 id="在控制台运行CMake"><a href="#在控制台运行CMake" class="headerlink" title="在控制台运行CMake"></a>在控制台运行CMake</h4><p>在命令行上，CMake可以当成一个交互的问答式的会话或者是一个无交互的程序。加上<code>-i</code>参数就可以启动交互模式，交互模式下Cmake将会为每一个参数询问你。CMake将会提供有效的默认值。CMake将问完所有的问题然后停止</p>
+<p>使用无交互模式编译项目在不需要参数或者很少参数的时候很简单。对于大型的项目像VTK,使用gui或者cmake -i比较推荐。</p>
+<p>使用CMake的无交互模式，首先cd到你想要放二进制的目录,in-source-build的话就直接运行cmake,加上-D来传递编译选项。out-source-build的话同样的操作，只是需要你添加上源文件的目录作为cmake的参数。然后使用<code>make</code>命令来编译你的项目，有些项目会包含 install 目标，你可以使用<code>make install</code>来安装他们</p>
+<h4 id="指定编译器"><a href="#指定编译器" class="headerlink" title="指定编译器"></a>指定编译器</h4><p>有时候在你的操作系统里边可能包好不止一个编译器或者编译器不在标准的路径下边，这个时候你告诉CMake你想要用的编译器在什么地方。有三种方法可以实现这个功能: </p>
+<ul>
+<li>generator可以指定编译器</li>
+<li>设置环境变量参数</li>
+<li>设置一个缓存实例</li>
+</ul>
+<p>默写generator可以绑定在特定的编译器，例如宇宙第一IDE的generator就是绑定到VS的编译器的。基于Makefile的generator会尝试一个常用的编译器列表。一般这个列表可以在这些文件中找到:</p>
+<blockquote>
+<p>Modules/CMakeDeterminCCompiler.cmake<br>Modules/CMakeDeterminCxxCompiler.cmake</p>
+</blockquote>
+<p>这个列表可以被环境变量覆盖掉。</p>
+<ul>
+<li>CC 环境变量用来指定C编译器</li>
+<li>CXX 用来指定c++编译器</li>
+</ul>
+<p>你可以使用——DCMake_CXX_COMPILER=cl直接在命令行上指定编译器。如果不设置这个的话，CMake会依次选择下边的这些编译器:</p>
+<blockquote>
+<p>c++ g++ CC aCC cl bcc xlC</p>
+</blockquote>
+<p>CMake开始运行并且选好编译器之后,你可以修改缓存选项CMAKE_CXX_COMPILER和CMAKE_C_COMPILER修改选择的编译器，不过这种做法是不推荐的，这么做的问题主要是项目可能是你的配置可能已经运行了一些基于编译器的测试来判断一些支持特性。修改了编译器之后可能会导致一些不正确的结果。如果你必须修改编译器。重在一个新的空的二进制目录中进行。编译器的flags和链接器同意可以使用环境变量来修改。<br>设置LDFLAFGS将会为link flag初始化一个缓存值,同样的CXXFLAGS和CFLAGS将会初始化CMAKE_CXX_FLAGS和CMAKE_C_FLAGS</p>
+<h4 id="依赖分析"><a href="#依赖分析" class="headerlink" title="依赖分析"></a>依赖分析</h4><p>CMake拥有一个强大的内置C/C++依赖分析能力,CMake还支持部分的Java和Fortran依赖分析，因为IDE支持和维护了依赖信息，CMake对这些编译系统放弃了这部分功能，但是，Makefiels是不了解怎么样去计算和维护依赖信息的，对于这些系统，CMake为C/C++/Fortran自动计算依赖信息，CMake自动生成和维护依赖信息，这些都是自动完成的，如果一个项目是用CMake配置的，用户主需要运行Make，CMake会帮你完成剩余的工作，对于多处理器系统CMake完全支持并行编译</p>
+<p>尽管用户不需要知道CMake是如何工作的，不过看一下项目的依赖信息文件也没啥坏处:),为每一个target创建的依赖文件保存在这四个文件中：</p>
+<ul>
+<li>depend.make</li>
+<li>flags.make</li>
+<li>build.make </li>
+<li>DependInfo.cmake</li>
+</ul>
+<blockquote>
+<p>depend.make保存了目录中的所有目标文件的所有的依赖信息<br>flags.make包含了编译的flags</p>
+</blockquote>
+<p>这两个文件如果改变了，源码就会被重新编译</p>
+<blockquote>
+<p>DependInfo.cmakes是保持更新信息更新，并且包含了项目中包括哪些文件和这些文件使用的语言<br>最后编译依赖的规则保存在build.make中，如果依赖不是过期了，所有的依赖需要重新计算来保持信息永远是最新的</p>
+</blockquote>
+<h2 id="2-6-编辑-CMakeLists-文件"><a href="#2-6-编辑-CMakeLists-文件" class="headerlink" title="2.6 编辑 CMakeLists 文件"></a>2.6 编辑 CMakeLists 文件</h2><p>CMakeLists文件可以用几乎任意的文本编辑器来编辑,有些编辑器比如Notepad++内置了语法高亮和缩进支持，神的编辑器和编辑器之神也内置了语法和缩进支持</p>
+<p>这段没啥营养啦，反正我用vim…</p>
+<h2 id="2-7-为CMake设置初始值"><a href="#2-7-为CMake设置初始值" class="headerlink" title="2.7 为CMake设置初始值"></a>2.7 为CMake设置初始值</h2><p>尽管CMake在交互模式下运行的很好，有时你也可能在没有GUI的时候设置下缓存条目，这种情况是很常见的当设置nightly dashboard(不明白这边)<a href="unknow0"></a>或者是你将创建很多编译树使用相同的cahce值，在这些情况下，CMake缓存可以以两种方式被初始化，第一种方式是使用CMake命令行下<code>-DCACHE_VAR:TYPE=VALUE</code>传递cache值</p>
+<p>再举个栗子 <img src="http://img.mp.itc.cn/upload/20170320/81a3c11642104d87b0a2e33b2eaafdd3.jpeg" alt="再举个栗子"> </p>
+<p>考虑下边的nightly dashboard脚本:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/tcsh</span><br><span class="line">cd $&#123;HOME&#125;</span><br><span class="line">#wipe out the old binary tree and then create it again</span><br><span class="line">rm -rf Foo-Linux</span><br><span class="line">mkdir Foo-Linux</span><br><span class="line">cd Foo-Linux</span><br><span class="line">#run cmake to setup the cache</span><br><span class="line">cmake -DBUILD_TESTING:BOOL=ON &lt;etc...&gt; ../Foo</span><br><span class="line">#generate the dashboard</span><br><span class="line">ctest -D Nightly</span><br></pre></td></tr></table></figure>
+<p>同样的方法可以用在windows的批处理文件上</p>
+<p>第二种方式是创建一个文件用来被CMake -C选项来加载。这种情况下取代-D这种方式的是使用一个文件来使用CMake解析，这个文件的语法就是标准的CMakeLists语法，通常来说就是一系列的<code>set</code>命令像这样的：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Build the vtkHybrid kit always</span></span><br><span class="line"><span class="keyword">set</span> (VTK_USE_HYBRID <span class="keyword">ON</span> CACHE BOOL <span class="string">"doc"</span> FORCE)</span><br></pre></td></tr></table></figure>
+<p>还有一种方法是你想要设置一个变量然后隐藏他，用户不会改变这个值，用下边的命令可以实现</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Build the vtkHybrid kit always</span></span><br><span class="line"><span class="keyword">set</span> (VTK_USE_HYBRID <span class="keyword">ON</span> CACHE BOOL <span class="string">"doc"</span> FORCE)</span><br><span class="line"><span class="keyword">mark_as_advanced</span> (VTK_USE_HYBRID)</span><br></pre></td></tr></table></figure>
+<p>你可能会想直接编辑cache文件，或者去“初始化”一个项目通过给他一个初始的cache文件的方式，这有可能跑不出来，或者在以后出现问题，首先，CMake cahe的语法是修改的东西，第二，cache 文件包含了完整路径。</p>
+<h2 id="2-8-编译你的项目"><a href="#2-8-编译你的项目" class="headerlink" title="2.8 编译你的项目"></a>2.8 编译你的项目</h2><p>运行完了CMake之后就可以准备编译了。如果你的编译系统是基于make的，你就cd到你的二进制目录然后运行make就行啦，如果是IDE的话就加载生产的项目文件，然后你按你平时的操作来就行了</p>
+<p>另外一种选择就是在命令行中使用CMake的编译选项，这个选项就是一个便利的工具让你在命令行编译你的项目<br>运行下<code>cmake -build</code>你就知道怎么用了。</p>
+<h4 id="不清楚的地方"><a href="#不清楚的地方" class="headerlink" title="[不清楚的地方]"></a>[不清楚的地方]</h4><ul>
+<li><a href="#unknow0">nightly dashboard</a></li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/03/07/hello-world/" rel="next" title="Hello World">
+                <i class="fa fa-chevron-left"></i> Hello World
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/03/07/CMake实战2/" rel="prev" title="CMake实战2">
+                CMake实战2 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">zhouquan</p>
+              <p class="site-description motion-element" itemprop="description">how-to-code</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/zq54zquan" target="_blank" title="GitHub"><i class="fa fa-fw fa-globe"></i>GitHub</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:zq54zquan@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-fw fa-globe"></i>E-Mail</a>
+                  
+                </span>
+              
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-3-cmkae基本语法和语法"><span class="nav-number">1.</span> <span class="nav-text">2.3 cmkae基本语法和语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-4-CMake-Hello-World"><span class="nav-number">2.</span> <span class="nav-text">2.4 CMake Hello World</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-5-如何运行CMake"><span class="nav-number">3.</span> <span class="nav-text">2.5 如何运行CMake</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#在控制台运行CMake"><span class="nav-number">3.0.1.</span> <span class="nav-text">在控制台运行CMake</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#指定编译器"><span class="nav-number">3.0.2.</span> <span class="nav-text">指定编译器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#依赖分析"><span class="nav-number">3.0.3.</span> <span class="nav-text">依赖分析</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-6-编辑-CMakeLists-文件"><span class="nav-number">4.</span> <span class="nav-text">2.6 编辑 CMakeLists 文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-7-为CMake设置初始值"><span class="nav-number">5.</span> <span class="nav-text">2.7 为CMake设置初始值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-8-编译你的项目"><span class="nav-number">6.</span> <span class="nav-text">2.8 编译你的项目</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#不清楚的地方"><span class="nav-number">6.0.1.</span> <span class="nav-text">[不清楚的地方]</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhouquan</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/theme-next/hexo-theme-next">NexT.Pisces</a> v6.0.5</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.0.5"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.0.5"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.0.5"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.0.5"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.0.5"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.0.5"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.0.5"></script>
+
+
+
+  
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
