@@ -5,7 +5,7 @@
   
 
 
-<html class="theme-next pisces use-motion" lang="zh-Hans">
+<html class="theme-next gemini use-motion" lang="zh-Hans">
 <head>
   <meta charset="UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -75,7 +75,7 @@
   var NexT = window.NexT || {};
   var CONFIG = {
     root: '/',
-    scheme: 'Pisces',
+    scheme: 'Gemini',
     version: '6.0.5',
     sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
     fancybox: false,
@@ -230,27 +230,9 @@
         </li>
       
         
-        <li class="menu-item menu-item-categories">
-          <a href="/categories/" rel="section">
-            <i class="menu-item-icon fa fa-fw fa-th"></i> <br />Categories</a>
-        </li>
-      
-        
         <li class="menu-item menu-item-archives">
           <a href="/archives/" rel="section">
             <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />Archives</a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-sitemap">
-          <a href="/sitemap.xml" rel="section">
-            <i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br />Sitemap</a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-commonweal">
-          <a href="/404/" rel="section">
-            <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />Commonweal 404</a>
         </li>
       
 
@@ -309,6 +291,156 @@
           <div id="content" class="content">
             
   <section id="posts" class="posts-expand">
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/09/B站AV号转音频程序/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="麻虾儿">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="左路不笑魔王">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/09/B站AV号转音频程序/" itemprop="url">B站AV号转音频程序</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-09T15:36:28+08:00">2018-03-09</time>
+            
+
+            
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>上B站的时候有好多弹幕都是在求BGM的。于是就想不如咱自己写一个东西来分离视频里边的音视频。把音频给抽出来：)</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>基本想法就是分成3步来做啦</p>
+<ul>
+<li>准备阶段—&gt;通过av号获取到视频的地址</li>
+<li>下载阶段—&gt;获取到下载地址之后下载视频</li>
+<li>分离阶段—&gt;分离视频中的音频保存到单独的文件</li>
+</ul>
+<p>很简单明确。然后就是找对用的技术啦，最主要的就是分离阶段的技术。我这边选择ffmpeg, 通用的解决方案啦。然后既然是用ffmpeg就要用c/c++来实现比较方便了。最终确定的方案就是这样的:</p>
+<ul>
+<li>网络请求—&gt; <a href="https://curl.haxx.se/libcurl/" target="_blank" rel="noopener">cURL</a></li>
+<li>JSON —&gt; <a href="https://github.com/Tencent/rapidjson" target="_blank" rel="noopener">rapidjson</a></li>
+<li>音视频 —&gt;<a href="http://ffmpeg.org/" target="_blank" rel="noopener">ffmpeg</a></li>
+</ul>
+<h2 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h2><ul>
+<li>ffmpeg 下载，make ， make install</li>
+<li>建立CMakeList.txt 我是在mac上写的。所有需要加上一些变量，下边的是我的cmakelist文件</li>
+</ul>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.5</span>)</span><br><span class="line"><span class="keyword">project</span>(BiliBg)</span><br><span class="line"><span class="comment">#mac/ios build need add some xcode lib</span></span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_FLAGS <span class="string">"$&#123;CMAKE_CXX_FLAGS&#125; -v -std=c++11 -stdlib=libc++ -framework OpenGL -framework AppKit -framework Security -framework CoreFoundation -framework CoreVideo -framework CoreMedia -framework QuartzCore -framework CoreFoundation -framework VideoDecodeAcceleration -framework Cocoa -framework AudioToolbox -framework VideoToolbox -framework OpenCL -I/usr/local/include -L/usr/local/lib/ -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -L/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/"</span>)</span><br><span class="line"><span class="keyword">set</span>(SOURCE_FILES main.cpp iomodule/BiliMovieDownloader.cpp iomodule/BiliMovieDownloader.h videomodule/BiliMovieDumux.cpp videomodule/BiliMovieDumux.h)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(BiliBg <span class="variable">$&#123;SOURCE_FILES&#125;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg curl)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg bz2)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg z)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg iconv.<span class="number">2.4</span>.<span class="number">0</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg /usr/local/lib/libavcodec.a)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg /usr/local/lib/libavformat.a)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg /usr/local/lib/libswscale.a)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg /usr/local/lib/libavdevice.a)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg /usr/local/lib/libavutil.a)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(BiliBg /usr/local/lib/libswresample.a)</span><br></pre></td></tr></table></figure>
+<p>代码其实比较简单分成两个模块：</p>
+<ul>
+<li>io模块 负责请求，解析，下载</li>
+<li>音视频分离模块 读取视频文件获取解码器，分离音视频</li>
+</ul>
+<p>代码地址：<a href="https://github.com/zq54zquan/bili-bmg" target="_blank" rel="noopener">这里</a></p>
+<h3 id="TODO-有空的时候有可能做吧"><a href="#TODO-有空的时候有可能做吧" class="headerlink" title="TODO: (有空的时候有可能做吧)"></a>TODO: (有空的时候有可能做吧)</h3><ul>
+<li>添加时间参数。分离特定时间的bgm </li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
     
       
 
@@ -955,7 +1087,7 @@ add_executable (Hello Hello.c)</code></p>
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-count">4</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -974,7 +1106,11 @@ add_executable (Hello Hello.c)</code></p>
                     
                       
                     
-                    <span class="site-state-item-count">2</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
@@ -1050,7 +1186,7 @@ add_executable (Hello Hello.c)</code></p>
 
 
 
-  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/theme-next/hexo-theme-next">NexT.Pisces</a> v6.0.5</div>
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/theme-next/hexo-theme-next">NexT.Gemini</a> v6.0.5</div>
 
 
 
