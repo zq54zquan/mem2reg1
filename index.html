@@ -307,6 +307,187 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/13/LKImageView源码分析/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="麻虾儿">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="左路不笑魔王">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/13/LKImageView源码分析/" itemprop="url">LKImageView源码分析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-13T12:05:12+08:00">2018-03-13</time>
+            
+
+            
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><a href="https://github.com/Tencent/LKImageKit" target="_blank" rel="noopener">LKImageKit是腾讯开源的基于OC的图片管理类的集合框架</a></p>
+<p>在项目主页上的README中说明包含了3个模块:</p>
+<ul>
+<li>加载模块</li>
+<li>解码模块</li>
+<li>缓存模块</li>
+</ul>
+<p>我们采用从上到下的分析方式来解析它的代码，首先是最常用的类<code>LKImageView</code></p>
+<p>从几个<code>init</code>方法中可以看出来，启动一个<code>LKImageView</code>的代码都需要调用<code>setup</code>方法，在这个方法中其实就是初始化了一个用于展示的<code>imageView</code>实例,并对于一些属性设置了default值，比较简单<br>并且还新建了一个<code>LKImageManager</code>实例，这个会在后边<a href="#imageManager">解释</a><br>既然添加了subview,就看下<code>layoutSubviews</code>方法,看到调用了<code>layoutAndLoad</code>方法。这个方法会根据图片的size,scale在加上屏幕的scale和控件的大小以及contentMode计算出<code>imageView</code>的frame.比如:</p>
+<ul>
+<li><code>LKImageScaleModeNone</code> 为居中显示图片，使用图片本身的大小 (不会变形)</li>
+<li><code>LKImageScaleModeScaleToFill</code> 直接使用控件大小平铺 (可能变形)</li>
+<li><code>LKImageScaleModeAspectFit</code> <code>LKImageScaleModeAspectFill</code>都是不会变形的缩放,差距只是在控件和图片本身的宽高比大小比较时选取的基准的不同</li>
+</ul>
+<p>之后还会调用加载图片的代码，在后边会展开代码来解析.</p>
+<p>下一步来看下加载本地图片的时候是怎么做：<br><code>LKImageView</code>overwrite了<code>setImage</code>方法: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">- (void)setImage:(UIImage *)image</span><br><span class="line">&#123;</span><br><span class="line">    self.loadingImageRequest = nil;</span><br><span class="line">    self.failureImageRequest = nil;</span><br><span class="line">    if (image)</span><br><span class="line">    &#123;</span><br><span class="line">        self.request = [LKImageImageRequest requestWithImage:image];</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        self.request = nil;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这边也算是比较好理解的了。如果传入的图片不是nil，就会新建一个<code>LKImageImageRequest</code>实例并且set给自身的属性</p>
+<p>然后再看下<code>LKImageImageRequest</code>这个类的实现，基类是<code>LKImageRequest</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">+ (instancetype)requestWithImage:(UIImage *)image key:(NSString *)key</span><br><span class="line">&#123;</span><br><span class="line">    LKImageImageRequest *request = [[LKImageImageRequest alloc] init];</span><br><span class="line">    request.image                = image;</span><br><span class="line">    request.keyForLoader         = [NSString stringWithFormat:@&quot;%p&quot;,image];</span><br><span class="line">    request.synchronized         = YES;</span><br><span class="line">    return request;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>基本可以确定对于本地图片是同步加载的。不过这个方法里边这key就有点尴尬啦，完全没有用到:(, keyForLoader取的key是这个image的内存地址。<br>在研究这个Request的代码之前我们先回过来看下<code>LKImageView</code>的<code>setRequest</code>方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">- (void)setRequest:(LKImageRequest *)request</span><br><span class="line">&#123;</span><br><span class="line">    request.internalProcessorList = self.processorList;</span><br><span class="line">    if (![_request isEqual:request] || _request.error)</span><br><span class="line">    &#123;</span><br><span class="line">        [self.imageManager cancelRequest:_request];</span><br><span class="line">        _request = request;</span><br><span class="line">    &#125;</span><br><span class="line">    if (!_request)</span><br><span class="line">    &#123;</span><br><span class="line">        [self internalSetImage:nil withRequest:nil];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    [self setNeedsLayout];</span><br><span class="line">    if (!self.delayLoadingImage)</span><br><span class="line">    &#123;</span><br><span class="line">        [self layoutIfNeeded];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>internalProcessorList</code>这个数组是图片的处理模块的processor，就是加特效</p>
+<p><img src="/2018/03/13/LKImageView源码分析/timg.jpeg" alt="特效"></p>
+<p>代码中看到的就是blur和gray两个东西</p>
+<p>然后看如果原先的request和设置的新的requset不是相同的或者原先的请求出现error的话就会走到imageManager cacheRequest的代码。这块先略过<br>然后就会发现代码调用了<code>setNeedsLayout</code>和<code>layoutIfNeeded</code>方法，这个时候就会回到上边说的<code>layoutSubviews</code>方法和<code>layoutAndLoad</code>了，我们上面没有展开这个代码，只是说了frame的变化。现在详细展开之后:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">- (void)layoutAndLoad</span><br><span class="line">&#123;</span><br><span class="line">    [self layoutImageView];</span><br><span class="line">    if (self.request.state == LKImageRequestStateFinish</span><br><span class="line">        &amp;&amp;!CGSizeEqualToSize(self.oldSize, self.size)</span><br><span class="line">        &amp;&amp;(!self.presentationImage||self.presentationImage.lk_isScaled))</span><br><span class="line">    &#123;</span><br><span class="line">        [self.request reset];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (self.request &amp;&amp; self.request.state == LKImageRequestStateInit)</span><br><span class="line">    &#123;</span><br><span class="line">        self.oldSize = self.size;</span><br><span class="line"></span><br><span class="line">        __weak LKImageView *wself = self;</span><br><span class="line"></span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line"></span><br><span class="line">        if (!self.request.synchronized)</span><br><span class="line">        &#123;</span><br><span class="line">            if (self.loadingImageRequest)</span><br><span class="line">            &#123;</span><br><span class="line">                [self dealWithRequest:self.loadingImageRequest];</span><br><span class="line">                [self.imageManager sendRequest:self.loadingImageRequest</span><br><span class="line">                                    completion:^(LKImageRequest *request, UIImage *image, BOOL isFromSyncCache) &#123;</span><br><span class="line">                                        [wself handleRequestFinish:request image:image isFromSyncCache:isFromSyncCache];</span><br><span class="line">                                    &#125;];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        [self dealWithRequest:self.request];</span><br><span class="line">        [self.imageManager sendRequest:self.request</span><br><span class="line">                            completion:^(LKImageRequest *request, UIImage *image, BOOL isFromSyncCache) &#123;</span><br><span class="line">                                [wself handleRequestFinish:request image:image isFromSyncCache:isFromSyncCache];</span><br><span class="line">                            &#125;];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一步是上面说过的计算imageView的frame的代码,剩余的代码是对request的操作,<br>假设我们第一次调用这个方法也就是说这个request刚刚被alloc出来，所以这个时候<code>state==LKImageRequestStateInit</code>，所以走不到reset，其实reset相当于情况状态:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">- (void)reset</span><br><span class="line">&#123;</span><br><span class="line">    self.error                        = nil;</span><br><span class="line">    self.progress                     = 0;</span><br><span class="line">    self.isCanceled                   = NO;</span><br><span class="line">    self.isStarted                    = NO;</span><br><span class="line">    self.isFinished                   = NO;</span><br><span class="line">    self.imageManagerCancelOperation  = nil;</span><br><span class="line">    self.loaderManagerCancelOperation = nil;</span><br><span class="line">    self.decodeOperation              = nil;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们现在的状态是符合第二个if的条件的。然后我们的requeset是一个synchronized的请求。暂时可以不用管异步的地方，只要看之后的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[self dealWithRequest:self.request];</span><br><span class="line">[self.imageManager sendRequest:self.request</span><br><span class="line"> completion:^(LKImageRequest *request, UIImage *image, BOOL isFromSyncCache) &#123;</span><br><span class="line">   		[wself handleRequestFinish:request image:image isFromSyncCache:isFromSyncCache];</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+<p>先看<code>dealWithRequst:</code> 这个和上边的特效是一样的，添加特效的processers。然后还设置了preferredSize为控件的大小<br><a name="imageManager">再看下</a><code>imageManager sendRequest</code>这一句。在<code>setup</code>方法中设置了一个defalut的imageManager.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">+ (instancetype)defaultManager</span><br><span class="line">&#123;</span><br><span class="line">    static LKImageManager *instance = nil;</span><br><span class="line">    static dispatch_once_t once;</span><br><span class="line">    dispatch_once(&amp;once, ^&#123;</span><br><span class="line">        instance                  = [[self alloc] initWithConfiguration:nil];</span><br><span class="line">        instance.cacheManager     = [LKImageCacheManager defaultManager];</span><br><span class="line">        instance.loaderManager    = [LKImageLoaderManager defaultManager];</span><br><span class="line">        instance.processorManager = [LKImageProcessorManager defaultManager];</span><br><span class="line">        [instance setConfiguration:[LKImageConfiguration defaultConfiguration]];</span><br><span class="line">    &#125;);</span><br><span class="line">    return instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先看看这个cacheManager.<code>LKImageCacheManager</code>维护了一个<code>LKImageCache</code>的实例的数组。看过源码发现。这个是一个基类,有两个个不同的实现类<code>LKImageMemoryCache</code>,<code>LKImageSmartCache</code>,不过你也定义自己的Cache类型。<br>在<code>LKImageManager</code>的<code>- (void)setConfiguration:(LKImageConfiguration *)configuration</code>方法中添加了对应的Cache:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">LKImageCacheManager *cacheManager = self.cacheManager;</span><br><span class="line">   [cacheManager unregisterAllCache];</span><br><span class="line">   for (LKImageCache *cache in configuration.cacheList)</span><br><span class="line">   &#123;</span><br><span class="line">       [cacheManager registerCache:cache];</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>而在<code>LKImageCacheManager</code>中的<code>- (void)cacheImage:(UIImage *)image forRequest:(LKImageRequest *)request</code>中就是调用了对用的Cache列表的对应的Cache方法，<code>LKImageCache</code>的子类来实现自己的<code>- (void)cacheImage:(UIImage *)image forRequest:(LKImageRequest *)request</code>方法就行了。<br>我们来看下LKImageKit本身提供的两个Cache的方法:</p>
+<h3 id="LKImageMemoryCache"><a href="#LKImageMemoryCache" class="headerlink" title="LKImageMemoryCache"></a>LKImageMemoryCache</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">- (void)cacheImage:(UIImage *)image URL:(NSString *)URL</span><br><span class="line">&#123;</span><br><span class="line">    NSString *key     = [self keyForURL:URL];</span><br><span class="line">    ImagePointer *ptr = NULL;</span><br><span class="line">    auto it           = imageMap.find([key cStringUsingEncoding:NSUTF8StringEncoding]);</span><br><span class="line">    if (it == imageMap.end())</span><br><span class="line">    &#123;</span><br><span class="line">        ImageNode *node     = new ImageNode();</span><br><span class="line">        ptr                 = new ImagePointer();</span><br><span class="line">        node-&gt;image         = image;</span><br><span class="line">        node-&gt;key           = [key cStringUsingEncoding:NSUTF8StringEncoding];</span><br><span class="line">        ptr-&gt;it             = FIFOQueue.insert(FIFOQueue.end(), node);</span><br><span class="line">        imageMap[node-&gt;key] = ptr;</span><br><span class="line">        if (FIFOQueue.size() &gt; self.maxLengthForFIFO)</span><br><span class="line">        &#123;</span><br><span class="line">            ImageNode *node = *FIFOQueue.begin();</span><br><span class="line">            FIFOQueue.pop_front();</span><br><span class="line">            auto it = imageMap.find(node-&gt;key);</span><br><span class="line">            delete it-&gt;second;</span><br><span class="line">            delete node;</span><br><span class="line">            imageMap.erase(it);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        ptr               = it-&gt;second;</span><br><span class="line">        (*ptr-&gt;it)-&gt;image = image;</span><br><span class="line">        [self visit:key];</span><br><span class="line">    &#125;</span><br><span class="line">    [self limitCacheSize];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个类中可以看到一个<code>map&lt;string,ImagePointer *&gt; imageMap</code>实例。在<code>- (void)cacheImage:(UIImage *)image URL:(NSString *)URL</code>中用图片的地址当做key来在map中寻找对应的ImagePointer指针，如果没有找到，就新建一个<code>ImageNode</code>和<code>ImagePointer</code>指针，设置node的image为image,然后在<code>FIFOQueue</code>的列表的尾部添加这个node。然后查看队列的大小时候超出了预定的阈值,如果超过就按照先进先出的策略pop掉第一个，并且在map中也删除掉这个迭代器类型的数据。同事在堆上把node和pointer都free掉。</p>
+<p>这边其实基本可以看出map和list的作用了，map是为在O(1)的时间复杂度内找到对应的数据。而list是为了控制缓存的大小.</p>
+<p>然后在看下如果map中存在这个key的时候的操作。就是更新下这个key对应的图片，然后调用visit方法，最后调用<code>limitCacheSize</code>方法</p>
+<p>先看下visit方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">- (void)visit:(NSString *)key</span><br><span class="line">&#123;</span><br><span class="line">    auto it = imageMap.find([key cStringUsingEncoding:NSUTF8StringEncoding]);</span><br><span class="line">    if (it == imageMap.end())</span><br><span class="line">    &#123;</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line">    ImagePointer *ptr = it-&gt;second;</span><br><span class="line">    ImageNode *node   = *ptr-&gt;it;</span><br><span class="line">    if (ptr-&gt;isLRUQueue)</span><br><span class="line">    &#123;</span><br><span class="line">        LRUQueue.erase(ptr-&gt;it);</span><br><span class="line">        ptr-&gt;it = LRUQueue.insert(LRUQueue.end(), node);</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        ptr-&gt;isLRUQueue = true;</span><br><span class="line">        FIFOQueue.erase(ptr-&gt;it);</span><br><span class="line">        ptr-&gt;it = LRUQueue.insert(LRUQueue.end(), node);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (LRUQueue.size() &gt; self.maxLengthForLRU)</span><br><span class="line">    &#123;</span><br><span class="line">        [self clearLastOneInLRU];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个时候先查看这个ImagePointer的Node是不是在LRUQueue这个列表里边，如果在的话就删除之后再插入到列表的最后去，如果不在的话就在FIFOQueue中删除掉这个node,重新加入到LRUQueue中去，之后再根据LRUQueue的大小来clean下,我们也能想到既然最新visit的是放到最尾部，那么做clean操作的时候肯定就是清除头部了.</p>
+<p>然后我们看下limitCacheSize方法,同样的是很简单的根据map中缓存的图片的尺寸x4之后的大小来和阈值比较，在做情况LRUQueue和FIFOQueue的操作。</p>
+<p>这样的话，我们也是能简单的想到LRUQueue的作用了，其实就是一层保证越是后边被使用的图片越是不容易被从缓存中清除出去的机制。<br>不过这边代码里边有个疑问的地方在清除数据的时候会先清除LRUQueue：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">- (void)clearLastOne</span><br><span class="line">&#123;</span><br><span class="line">    if (LRUQueue.size() &gt; 0)</span><br><span class="line">    &#123;</span><br><span class="line">        [self clearLastOneInLRU];</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        [self clearLastOneInFIFO];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong> 感觉上是先FIFOQueue是不是更好一点，毕竟在FIFO中的图片按代码来说只是被用了一次。哪位大佬了解的可以说下 </strong></p>
+<h3 id="LKImageSmartCache"><a href="#LKImageSmartCache" class="headerlink" title="LKImageSmartCache"></a>LKImageSmartCache</h3><p>这个比较简单，说使用一个<code>NSMapTable</code>来管理缓存数据就不多说了。</p>
+<p>缓存的逻辑基本就是这样啦。好像在这边并没有看到README中所说的磁盘缓存<br><img src="/2018/03/13/LKImageView源码分析/lkimagekit_cache.png" alt="图片缓存目录"></p>
+<p>在看下图片加载的代码,主要是看看发送请求的代码(这边的请求不一定是网络请求。是对图片加载的一种封装，可以想象成操作系统对IO的封装一样)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[self.imageManager sendRequest:self.request</span><br><span class="line">                            completion:^(LKImageRequest *request, UIImage *image, BOOL isFromSyncCache) &#123;</span><br><span class="line">                                [wself handleRequestFinish:request image:image isFromSyncCache:isFromSyncCache];</span><br><span class="line">                            &#125;];</span><br></pre></td></tr></table></figure>
+<p>这个方法正如他的category写的那样是一个<a name="managercallback">语法糖</a>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">- (void)sendRequest:(LKImageRequest *)request completion:(LKImageManagerCallback)callback</span><br><span class="line">&#123;</span><br><span class="line">    request.managerCallback = callback;</span><br><span class="line">    [self sendRequest:request];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在sendRequest方法中可以看到调用了<code>- (BOOL)checkAndLoadCache:(LKImageRequest *)requestLV0</code>这个方法来加载缓存。我们会看到会在mainqueue中同步的运行block.这边可以看到一个GCD的方法<code>if (dispatch_queue_get_label(queue) == dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL))</code>,用于判断当前的queue是否是指定的queue.<br>然后在block中会调用CacheManager的<code>- (UIImage *)imageForRequest:(LKImageRequest *)request continueLoad:(BOOL *)continueLoad</code>方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">- (UIImage *)imageForRequest:(LKImageRequest *)request continueLoad:(BOOL *)continueLoad</span><br><span class="line">&#123;</span><br><span class="line">    UIImage *image = nil;</span><br><span class="line">    for (LKImageCache *cache in self.cacheList)</span><br><span class="line">    &#123;</span><br><span class="line">        image = [cache imageForRequest:request continueLoad:continueLoad];</span><br><span class="line">        if (image)</span><br><span class="line">        &#123;</span><br><span class="line">            break;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return image;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看出其实就是在配置的CacheList中来查找对应的图片了，对应的实现就是也比较简单了，比如MemoryCache就是在map中find这个key对应的数据，SmartCache就是在NSMapTable中找对用的数据,不过这边的continuedLoad参数在源码中提供的两个Cache中都是没有被使用的参数，不知道是什么考虑。获取到缓存之后就会调用request的managerCallback这个block(<a href="#managercallback">就是用户传入的回调</a>),同时还会把childRequests的callback也调用一遍，这个requestlist我们以后再来分析:)</p>
+<p>到目前为止基本分析完了缓存这块的内容啦。</p>
+<p>以后会分下下LKImageRequest和他的子类</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/09/B站AV号转音频程序/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -912,138 +1093,6 @@ add_executable (Hello Hello.c)</code></p>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/07/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="麻虾儿">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="左路不笑魔王">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/03/07/hello-world/" itemprop="url">Hello World</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-07T16:56:24+08:00">2018-03-07</time>
-            
-
-            
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1108,7 +1157,9 @@ add_executable (Hello Hello.c)</code></p>
                     
                       
                     
-                    <span class="site-state-item-count">3</span>
+                      
+                    
+                    <span class="site-state-item-count">4</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
