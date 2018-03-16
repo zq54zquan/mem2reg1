@@ -100,11 +100,11 @@
 
 
   
-  <meta name="keywords" content="Objective-C," />
+  <meta name="keywords" content="Objective-C,LKImageKit," />
 
 
 <meta name="description" content="接着上一次的LKImageManager中的combineRequest:方法继续分析。可以看到这边使用了一个在初始化时使用的NSOperationQueue,在初始化方法中我们可以看到，这个queue是一个maxConcurrentOperationCount是1的queue,可以把他当成一个同步的queue来看了。在combineRequest:方法中我们看到这个queue使用了一个类别方法-">
-<meta name="keywords" content="Objective-C">
+<meta name="keywords" content="Objective-C,LKImageKit">
 <meta property="og:type" content="article">
 <meta property="og:title" content="LKImageView源码分析2">
 <meta property="og:url" content="http://www.firegg.top/2018/03/15/LKImageView源码分析2/index.html">
@@ -112,8 +112,9 @@
 <meta property="og:description" content="接着上一次的LKImageManager中的combineRequest:方法继续分析。可以看到这边使用了一个在初始化时使用的NSOperationQueue,在初始化方法中我们可以看到，这个queue是一个maxConcurrentOperationCount是1的queue,可以把他当成一个同步的queue来看了。在combineRequest:方法中我们看到这个queue使用了一个类别方法-">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://www.firegg.top/2018/03/15/LKImageView源码分析2/matawow.gif">
+<meta property="og:image" content="http://www.firegg.top/2018/03/15/LKImageView源码分析2/matawow.gif">
 <meta property="og:image" content="http://www.firegg.top/2018/03/15/LKImageView源码分析2/imageloaders.png">
-<meta property="og:updated_time" content="2018-03-15T11:58:49.465Z">
+<meta property="og:updated_time" content="2018-03-16T10:14:13.273Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="LKImageView源码分析2">
 <meta name="twitter:description" content="接着上一次的LKImageManager中的combineRequest:方法继续分析。可以看到这边使用了一个在初始化时使用的NSOperationQueue,在初始化方法中我们可以看到，这个queue是一个maxConcurrentOperationCount是1的queue,可以把他当成一个同步的queue来看了。在combineRequest:方法中我们看到这个queue使用了一个类别方法-">
@@ -233,6 +234,12 @@
         <li class="menu-item menu-item-tags">
           <a href="/tags/" rel="section">
             <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />Tags</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-th"></i> <br />Categories</a>
         </li>
       
         
@@ -363,6 +370,31 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/技术/" itemprop="url" rel="index"><span itemprop="name">技术</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/技术/源码解析/" itemprop="url" rel="index"><span itemprop="name">源码解析</span></a></span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -403,13 +435,17 @@
         <p>接着上一次的<code>LKImageManager</code>中的<code>combineRequest:</code>方法继续分析。可以看到这边使用了一个在初始化时使用的<code>NSOperationQueue</code>,在初始化方法中我们可以看到，这个queue是一个<code>maxConcurrentOperationCount</code>是1的queue,可以把他当成一个同步的queue来看了。<br>在<code>combineRequest:</code>方法中我们看到这个queue使用了一个类别方法<code>- (void)lk_addOperation:(NSOperation *)op request:(LKImageRequest *)request</code>，看看源码十分简单，通过reques的同步与否来看是直接运行opeation还是加入到queue中去等待执行。operation是通过<code>blockOperationWithBlock</code>方法创建的。<br>可以看看其中的实现:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">if (requestLV0.isCanceled)</span><br><span class="line">&#123;</span><br><span class="line">	atomic_fetch_sub(&amp;LKImageRunningRequestCount, 1);</span><br><span class="line">	atomic_fetch_add(&amp;LKImageCancelRequestCount, 1);</span><br><span class="line">	requestLV0.isFinished = YES;</span><br><span class="line">	requestLV0.error      = [LKImageError errorWithCode:LKImageErrorCodeCancel];</span><br><span class="line">	[requestLV0 managerCallback:nil isFromSyncCache:NO];</span><br><span class="line">	[requestLV0.imageManagerCancelOperation cancel];</span><br><span class="line">	requestLV0.imageManagerCancelOperation = nil;</span><br><span class="line">	return;</span><br><span class="line">&#125;</span><br><span class="line">LKImageLogVerbose([NSString stringWithFormat:@&quot;LKImageManagerProcessRequest:%@&quot;, requestLV0]);</span><br><span class="line">LKImageRequest *requestLV1 = nil;</span><br><span class="line">requestLV0.error           = nil;</span><br><span class="line">if (!requestLV0.synchronized)</span><br><span class="line">&#123;</span><br><span class="line">	requestLV1 = [self.requestDic objectForKey:requestLV0.identifier];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if (requestLV1)</span><br><span class="line">&#123;</span><br><span class="line">	LKImageLogVerbose([NSString stringWithFormat:@&quot;ManagerRequestCombine:%@&quot;, requestLV1]);</span><br><span class="line">	[requestLV1 addChildRequest:requestLV0];</span><br><span class="line">	return;</span><br><span class="line">&#125;</span><br><span class="line">else</span><br><span class="line">&#123;</span><br><span class="line">	requestLV1 = [requestLV0 createSuperRequest];</span><br><span class="line">	if (!requestLV0.synchronized)</span><br><span class="line">	&#123;</span><br><span class="line">		LKImageLogVerbose([NSString stringWithFormat:@&quot;ManagerRequestCreate:%@&quot;, requestLV1]);</span><br><span class="line">		[self.requestDic setObject:requestLV1 forKey:requestLV1.identifier];</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">[self loadRequest:requestLV1];</span><br></pre></td></tr></table></figure></p>
 <p>先看到的是参看isCanceled属性。如果是cancel的话就使用无锁系统函数来更新请求个数。并且把reques的状态更新。<br>然后是<code>- (void)managerCallback:(UIImage *)image isFromSyncCache:(BOOL)isFromSyncCache</code>方法,这个方法我们上一篇说过就是调用request和requestList的回调方法,然后清除<a href="#cancelRequest">imageManagerCancelOperation</a><br>然后看下<code>LKImageRequest</code>的<code>addChildRequest:</code>方法.基本上是同步下请求的属性到superRequest中，并且在<code>requestList</code>中添加。<code>createSuper</code>方法调用了<code>copy</code>这个方法值得留一下:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">- (id)copy</span><br><span class="line">&#123;</span><br><span class="line">    LKImageRequest *request = [[[self class] alloc] init];</span><br><span class="line">    Class cls               = [self class];</span><br><span class="line">    while (cls != [NSObject class])</span><br><span class="line">    &#123;</span><br><span class="line">        unsigned int numberOfIvars = 0;</span><br><span class="line">        Ivar *ivars                = class_copyIvarList(cls, &amp;numberOfIvars);</span><br><span class="line">        for (const Ivar *p = ivars; p &lt; ivars + numberOfIvars; p++)</span><br><span class="line">        &#123;</span><br><span class="line">            Ivar const ivar = *p;</span><br><span class="line">            NSString *key   = [NSString stringWithUTF8String:ivar_getName(ivar)];</span><br><span class="line">            if (key == nil)</span><br><span class="line">            &#123;</span><br><span class="line">                continue;</span><br><span class="line">            &#125;</span><br><span class="line">            if ([key length] == 0)</span><br><span class="line">            &#123;</span><br><span class="line">                continue;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            id value = [self valueForKey:key];</span><br><span class="line">            @try</span><br><span class="line">            &#123;</span><br><span class="line">                [request setValue:value forKey:key];</span><br><span class="line">            &#125;</span><br><span class="line">            @catch (NSException *exception)</span><br><span class="line">            &#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (ivars)</span><br><span class="line">        &#123;</span><br><span class="line">            free(ivars);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        cls = class_getSuperclass(cls);</span><br><span class="line">    &#125;</span><br><span class="line">    return request;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到这个方法是遍历本身的class的超类。并且获取对应的ivar数据，这边给我提供了一个新的设置值的思路，就是通过获取ivar的name来创建出一个key，然后通过key使用kvc来做值的设置，一般情况下，我们都是使用<br><code>object_setIvar(&lt;#id  _Nullable obj#&gt;, &lt;#Ivar  _Nonnull ivar#&gt;, &lt;#id  _Nullable value#&gt;)</code>这个方法来做ivar的赋值的，一般情况下对于非类类型的ivar需要做方法的类型转换。这个就不能像上边那样做到使用kvc这种通用的方法来实现，<del>这种应该还是是只适应于像<code>LKImageRequest</code>这种没有私有的值包含ivar，不包含setter的方法的类型</del>。这个操作可以的<br><img src="/2018/03/15/LKImageView源码分析2/matawow.gif" alt="666"></p>
-<p>在copy之后会把对用的callback清空，防止多次调用。<br>之后会调用<code>loadRequest:(LKImageRequest *)requestV1</code>. 这边会用到一个大一点的类<code>LKImageLoaderManager</code></p>
-<h3 id="LKImageLoaderManager"><a href="#LKImageLoaderManager" class="headerlink" title="LKImageLoaderManager"></a>LKImageLoaderManager</h3><p>从这个类的初始化函数中，可以看出需要两个数组，一个<code>LKImageLoader</code>数组和一个<code>LKImageDecoder</code>数组。<br>在实例中还包含一个<code>LKImageDecoderManager</code></p>
+<p>可以看到这个方法是遍历本身的class的超类。并且获取对应的ivar数据，这边给我提供了一个新的设置值的思路，就是通过获取ivar的name来创建出一个key，然后通过key使用kvc来做值的设置，一般情况下，我们都是使用<br><code>object_setIvar(&lt;#id  _Nullable obj#&gt;, &lt;#Ivar  _Nonnull ivar#&gt;, &lt;#id  _Nullable value#&gt;)</code>这个方法来做ivar的赋值的，一般情况下对于非类类型的ivar需要做方法的类型转换。这个就不能像上边那样做到使用kvc这种通用的方法来实现，<del>这种应该还是是只适应于像<code>LKImageRequest</code>这种没有私有的值包含ivar，不包含setter的方法的类型</del><a href="https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/KeyValueCoding/SearchImplementation.html#//apple_ref/doc/uid/20000955" target="_blank" rel="noopener">KVO</a>。<br><img src="/2018/03/15/LKImageView源码分析2/matawow.gif" alt="666"></p>
+<p>之后会调用<code>loadRequest:(LKImageRequest *)requestV1</code>. 这边会用到一个大一点的类<code>LKImageLoaderManager</code><br>这几段代码看下来之后基本可以确定对于对同一个资源的请求，如果是异步请求，会缓存一个request下来，之后对于同一个资源的请求会做一个相当于进程组的东西出来，这个第一次被copy的相当与进程组的头，然后我们再联系前边的requestList属性的callback的调用。就可以看出对于东一个资源只会有一个请求，但是会有多个回调回来，这些回调就是存储在requestList中了，在完成之后遍历的调用。这个做法很有想法。<br><img src="/2018/03/15/LKImageView源码分析2/matawow.gif" alt="666"></p>
+<h3 id="LKImageLoaderManager"><a href="#LKImageLoaderManager" class="headerlink" title="LKImageLoaderManager"></a>LKImageLoaderManager</h3><p>这个类中的<code>- (void)imageWithRequest:(LKImageRequest *)requestLV1 callback:(LKImageLoaderCallback)callback</code>方法和<code>LKImageManager</code>有些类似。同样是用来生产一个相当于进程组的东西来实现对同一个资源的多次请求的合并。<br>在这个方法中同样会把一个<code>LKImageLoaderProtocol</code>的实例赋值给request,从这个类的初始化函数中，可以看出需要两个数组，一个<code>LKImageLoader</code>数组和一个<code>LKImageDecoder</code>数组,我们这边的request的loader就是在这个数组中找出一个合法的可以用的loader来作为属性保存。<br>在loadRequest方法中,可以看到使用loader的semaphore来控制异步的请求，在请求取消或者请求结束之后会把request的loaderOperation赋值为nil。</p>
 <h4 id="LKImageLoader"><a href="#LKImageLoader" class="headerlink" title="LKImageLoader"></a>LKImageLoader</h4><p>这个类本身可以看做一个虚基类，包含了一个NSOperationQueue,一个gcdqueue(同步)和一个gcd信号。</p>
 <p>我们看到在configuration中包含了5中源码中提供的LKImageLoader的子类<br><img src="/2018/03/15/LKImageView源码分析2/imageloaders.png" alt="imageloaders"></p>
-<p>我们一个一个看下：</p>
-<h5 id="LKImageBundleLoader"><a href="#LKImageBundleLoader" class="headerlink" title="LKImageBundleLoader"></a>LKImageBundleLoader</h5><p><code>- (void)imageWithRequest:(LKImageRequest *)request callback:(LKImageImageCallback)callback</code>方法被复写。代码很简单，就是看request的URL是不是含有后缀，有的话就在主bundle里边找到对应的图片，没有后缀的会就直接imageNamed加载。主要应该是用来应对imageNamed加载不到的类型的图片,JPEG什么的然后就是调用callback了</p>
+<p>我们简单的看下：</p>
+<h5 id="LKImageBundleLoader"><a href="#LKImageBundleLoader" class="headerlink" title="LKImageBundleLoader"></a>LKImageBundleLoader</h5><p><code>- (void)imageWithRequest:(LKImageRequest *)request callback:(LKImageImageCallback)callback</code>方法被复写。代码很简单，就是看request的URL是不是含有后缀，有的话就在主bundle里边找到对应的图片，没有后缀的会就直接imageNamed加载。主要应该是用来应对imageNamed加载不到的类型的图片,JPEG什么的然后就是调用callback了<br><code>LKImageLocalFileLoader</code>,<code>LKImagePhotoKitLoader</code>和<code>LKImageMemoryImageLoader</code>实现也比较简单，就不展开说了</p>
+<h5 id="LKImageNetworkFileLoader"><a href="#LKImageNetworkFileLoader" class="headerlink" title="LKImageNetworkFileLoader"></a>LKImageNetworkFileLoader</h5><p><code>- (void)dataWithRequest:(LKImageRequest *)request callback:(LKImageDataCallback)callback</code> 可以看到首先是在本地文件目录中寻找图片，不是本地图片使用URLSession来做网络请求。这边其实也不复杂，使用两个容器类型的实例来存储一个封装了NSURLSessionTask的类型。这么做的原因是有些东西用URLSessionTask是保持不住的。</p>
+<h3 id="CallBack-–-gt-Decoder"><a href="#CallBack-–-gt-Decoder" class="headerlink" title="CallBack –&gt; Decoder"></a>CallBack –&gt; Decoder</h3><p>请求结束之后的回到中首先调用<code>requestDidFinished</code>把异步请求的dictionary中的数据清除。对于请求获取到的是image或者data数据分别做两种不同处理。<br>对于Data的数据是调用<code>LKImageDecoderManager</code>的<code>- (void)decodeImageFromData:(NSData *)data request:(LKImageRequest *)request complete:(LKImageDecoderCallback)complete</code>方法、之后就是调用系统解码来解码图片，其中包含了是对GIF的处理。</p>
+<h3 id="LKImageProcessorManager"><a href="#LKImageProcessorManager" class="headerlink" title="LKImageProcessorManager"></a>LKImageProcessorManager</h3><p>在请求的callback调用回到<code>imageManager</code>之后会运行processorManager的代码，这边可以看出这几个manager的架构师差不多的，都是可扩展的，使用每一个<code>LKImageProcessor</code>去处理特效。之后还是会回到CacheManager中去缓存图片</p>
+<p>== (完) ==</p>
 
       
     </div>
@@ -431,6 +467,8 @@
         <div class="post-tags">
           
             <a href="/tags/Objective-C/" rel="tag"># Objective-C</a>
+          
+            <a href="/tags/LKImageKit/" rel="tag"># LKImageKit</a>
           
         </div>
       
@@ -539,6 +577,23 @@
               
 
               
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
 
               
                 
@@ -555,7 +610,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">4</span>
+                      
+                    
+                    <span class="site-state-item-count">5</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
@@ -605,7 +662,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#LKImageLoaderManager"><span class="nav-number">1.</span> <span class="nav-text">LKImageLoaderManager</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#LKImageLoader"><span class="nav-number">1.1.</span> <span class="nav-text">LKImageLoader</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#LKImageBundleLoader"><span class="nav-number">1.1.1.</span> <span class="nav-text">LKImageBundleLoader</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#LKImageLoaderManager"><span class="nav-number">1.</span> <span class="nav-text">LKImageLoaderManager</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#LKImageLoader"><span class="nav-number">1.1.</span> <span class="nav-text">LKImageLoader</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#LKImageBundleLoader"><span class="nav-number">1.1.1.</span> <span class="nav-text">LKImageBundleLoader</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#LKImageNetworkFileLoader"><span class="nav-number">1.1.2.</span> <span class="nav-text">LKImageNetworkFileLoader</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CallBack-–-gt-Decoder"><span class="nav-number">2.</span> <span class="nav-text">CallBack –&gt; Decoder</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LKImageProcessorManager"><span class="nav-number">3.</span> <span class="nav-text">LKImageProcessorManager</span></a></li></ol></div>
             
 
           </div>

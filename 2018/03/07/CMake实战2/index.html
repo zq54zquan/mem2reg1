@@ -100,21 +100,21 @@
 
 
   
-  <meta name="keywords" content="CMake," />
+  <meta name="keywords" content="CMake,Tools," />
 
 
-<meta name="description" content="4 编写CMakeLists文件这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如C">
-<meta name="keywords" content="CMake">
+<meta name="description" content="4 编写CMakeLists文件这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如">
+<meta name="keywords" content="CMake,Tools">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CMake实战2">
 <meta property="og:url" content="http://www.firegg.top/2018/03/07/CMake实战2/index.html">
 <meta property="og:site_name" content="左路不笑魔王">
-<meta property="og:description" content="4 编写CMakeLists文件这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如C">
+<meta property="og:description" content="4 编写CMakeLists文件这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-03-08T09:31:03.140Z">
+<meta property="og:updated_time" content="2018-03-16T08:22:01.570Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CMake实战2">
-<meta name="twitter:description" content="4 编写CMakeLists文件这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如C">
+<meta name="twitter:description" content="4 编写CMakeLists文件这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如">
 
 
 
@@ -230,6 +230,12 @@
         <li class="menu-item menu-item-tags">
           <a href="/tags/" rel="section">
             <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />Tags</a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            <i class="menu-item-icon fa fa-fw fa-th"></i> <br />Categories</a>
         </li>
       
         
@@ -360,6 +366,31 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/技术/" itemprop="url" rel="index"><span itemprop="name">技术</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/技术/工具/" itemprop="url" rel="index"><span itemprop="name">工具</span></a></span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -397,7 +428,8 @@
       
 
       
-        <h1 id="4-编写CMakeLists文件"><a href="#4-编写CMakeLists文件" class="headerlink" title="4 编写CMakeLists文件"></a>4 编写CMakeLists文件</h1><p>这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如Cache中的值，需要被编译的文件。最后会讨论下怎么让CMakeLists文件健壮并且可维护，基础的语法和关键概念都已经在上边的章节说过了，这一章将张开这些概念并且引入一些新的东西</p>
+        <hr>
+<h1 id="4-编写CMakeLists文件"><a href="#4-编写CMakeLists文件" class="headerlink" title="4 编写CMakeLists文件"></a>4 编写CMakeLists文件</h1><p>这一章主要覆盖了为你的软件编写CMakeLists文件一些基础，我们将会学习到你在大多数项目中遇到的所有的基本命令和一些问题,也会学习下周末把现有的UNIX或者Windows项目转换到CMake上来，因为CMake能处理非常复杂的项目，所以大多数项目中你会发现这一章的内容完全够用啦，CMake是被CMakeLists文件驱动的，CMakeList文件决定一切，比如Cache中的值，需要被编译的文件。最后会讨论下怎么让CMakeLists文件健壮并且可维护，基础的语法和关键概念都已经在上边的章节说过了，这一章将张开这些概念并且引入一些新的东西</p>
 <h2 id="4-1-CMake-语法"><a href="#4-1-CMake-语法" class="headerlink" title="4.1 CMake 语法"></a>4.1 CMake 语法</h2><p>CMakeLists文件遵守一个简单的语法规则(注释，命令，空白符)，注释是从一个<code>#</code>开始的知道行尾，命令是由命令名称，小括号，空白符分割的参数组成的，含有空白符的参数用双引号括起来，反斜线可以做转移符，后边的一些列子会帮你解决语法上困惑，你可能回想CMake为什么不用先用的语言的语法来实现，比如Python啥的，主要的母的是想让CMake不要依赖其他的东西来运行，要是依赖了这些语言的话，安装就会很大,也需要依赖特定版本的语言，我们自己干的话就没有性能和兼容问题啦</p>
 <h2 id="4-2-基本命令"><a href="#4-2-基本命令" class="headerlink" title="4.2 基本命令"></a>4.2 基本命令</h2><p>上一章已经介绍了蛮多基础的基础命令了，这一章将会重新来看下并且要展开来讲下，第一个命令是顶层CMakeLists文件要包含的<code>PROJECT</code>命令，这个命令不仅可以给项目命名还能指定工程使用的语言他的语法如下:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">project (projectname [CXX] [C] [Java] [NONE])</span><br></pre></td></tr></table></figure>
@@ -563,6 +595,8 @@
           
             <a href="/tags/CMake/" rel="tag"># CMake</a>
           
+            <a href="/tags/Tools/" rel="tag"># Tools</a>
+          
         </div>
       
 
@@ -674,6 +708,23 @@
               
 
               
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
 
               
                 
@@ -690,7 +741,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">4</span>
+                      
+                    
+                    <span class="site-state-item-count">5</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
