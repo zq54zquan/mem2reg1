@@ -333,6 +333,190 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://www.firegg.top/2018/03/30/SDWebImage源码分析/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="麻虾儿">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/upload/manu.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="左路不笑魔王">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/30/SDWebImage源码分析/" itemprop="url">SDWebImage源码分析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-30T12:01:53+08:00">2018-03-30</time>
+            
+
+            
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/技术/" itemprop="url" rel="index"><span itemprop="name">技术</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/技术/源码解析/" itemprop="url" rel="index"><span itemprop="name">源码解析</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/30/SDWebImage源码分析/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2018/03/30/SDWebImage源码分析/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>SDWebImage使我们平时开发中用的非常多的一个突破加载缓存库.</p>
+<h3 id="主要组件"><a href="#主要组件" class="headerlink" title="主要组件"></a>主要组件</h3><p>根据源码的group我们可以看出项目大概的组件: 下载模块，缓存模块，解码模块，工具类，category</p>
+<p><img src="/2018/03/30/SDWebImage源码分析/gujia.png" alt="骨架"></p>
+<p>首先我们看看下载模块。按道理下载是不依赖上层的实现的</p>
+<h4 id="Downloader"><a href="#Downloader" class="headerlink" title="Downloader"></a>Downloader</h4><p>首先看下<code>SDWebImageDownloaderOperation</code>类，这个类继承<code>NSOperation</code>,提供了多线程能力。<br>看下初始化方法，其实就是写普通的赋值操作。</p>
+<p>类中定义了<code>- (nullable id)addHandlersForProgress:(nullable SDWebImageDownloaderProgressBlock)progressBlock completed:(nullable SDWebImageDownloaderCompletedBlock)completedBlock</code>方法。实现也简单，就是在callback的字典中保存这两个回调的copy。<br><code>- (nullable NSArray&lt;id&gt; *)callbacksForKey:(NSString *)key</code> 这个方法可以看下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">- (nullable NSArray&lt;id&gt; *)callbacksForKey:(NSString *)key &#123;</span><br><span class="line">    LOCK(self.callbacksLock);</span><br><span class="line">    NSMutableArray&lt;id&gt; *callbacks = [[self.callbackBlocks valueForKey:key] mutableCopy];</span><br><span class="line">    UNLOCK(self.callbacksLock);</span><br><span class="line">    <span class="comment">// We need to remove [NSNull null] because there might not always be a progress block for each callback</span></span><br><span class="line">    [callbacks removeObjectIdenticalTo:[NSNull null]];</span><br><span class="line">    <span class="keyword">return</span> [callbacks copy]; <span class="comment">// strip mutability here</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中这里对<code>NSArray</code>调用KVC,结果是啥呢? 文档看下知道啦</p>
+<blockquote>
+<p>Return an array containing the results of invoking -valueForKey: on each of the receiver’s elements. The returned array will contain NSNull elements for each instance of -valueForKey: returning nil.</p>
+</blockquote>
+<p>其实就是对其中的每个元素做KVC获得一个新的数组，对于其中返回<code>nil</code>的返回<code>NSNull</code><br>之后再清掉<code>NSnull</code>就得到一个callbacks数组中的所有元素的对应的含有key的值的列表了,然后是<code>cancel:</code>方法，就是在callbacks数组中删除回调，之后如果要是为0了，就调用<code>cancel</code>方法</p>
+<p>之后可以看到主方法<code>start</code><br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)start &#123;</span><br><span class="line">    @synchronized (self) &#123;</span><br><span class="line">        <span class="keyword">if</span> (self.isCancelled) &#123;</span><br><span class="line">            self.finished = YES;</span><br><span class="line">            [self reset];</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> SD_UIKIT</span></span><br><span class="line">        Class UIApplicationClass = NSClassFromString(@<span class="string">"UIApplication"</span>);</span><br><span class="line">        BOOL hasApplication = UIApplicationClass &amp;&amp; [UIApplicationClass respondsToSelector:@selector(sharedApplication)];</span><br><span class="line">        <span class="keyword">if</span> (hasApplication &amp;&amp; [self shouldContinueWhenAppEntersBackground]) &#123;</span><br><span class="line">            __weak __typeof__ (self) wself = self;</span><br><span class="line">            UIApplication * app = [UIApplicationClass performSelector:@selector(sharedApplication)];</span><br><span class="line">            self.backgroundTaskId = [app beginBackgroundTaskWithExpirationHandler:^&#123;</span><br><span class="line">                __strong __typeof (wself) sself = wself;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (sself) &#123;</span><br><span class="line">                    [sself cancel];</span><br><span class="line"></span><br><span class="line">                    [app endBackgroundTask:sself.backgroundTaskId];</span><br><span class="line">                    sself.backgroundTaskId = UIBackgroundTaskInvalid;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;];</span><br><span class="line">        &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">        NSURLSession *session = self.unownedSession;</span><br><span class="line">        <span class="keyword">if</span> (!session) &#123;</span><br><span class="line">            NSURLSessionConfiguration *sessionConfig = [NSURLSessionConfiguration defaultSessionConfiguration];</span><br><span class="line">            sessionConfig.timeoutIntervalForRequest = <span class="number">15</span>;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">             *  Create the session for this task</span></span><br><span class="line"><span class="comment">             *  We send nil as delegate queue so that the session creates a serial operation queue for performing all delegate</span></span><br><span class="line"><span class="comment">             *  method calls and completion handler calls.</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            session = [NSURLSession sessionWithConfiguration:sessionConfig</span><br><span class="line">                                                    delegate:self</span><br><span class="line">                                               delegateQueue:nil];</span><br><span class="line">            self.ownedSession = session;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (self.options &amp; SDWebImageDownloaderIgnoreCachedResponse) &#123;</span><br><span class="line">            <span class="comment">// Grab the cached data for later check</span></span><br><span class="line">            NSURLCache *URLCache = session.configuration.URLCache;</span><br><span class="line">            <span class="keyword">if</span> (!URLCache) &#123;</span><br><span class="line">                URLCache = [NSURLCache sharedURLCache];</span><br><span class="line">            &#125;</span><br><span class="line">            NSCachedURLResponse *cachedResponse;</span><br><span class="line">            <span class="comment">// NSURLCache's `cachedResponseForRequest:` is not thread-safe, see https://developer.apple.com/documentation/foundation/nsurlcache#2317483</span></span><br><span class="line">            @synchronized (URLCache) &#123;</span><br><span class="line">                cachedResponse = [URLCache cachedResponseForRequest:self.request];</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (cachedResponse) &#123;</span><br><span class="line">                self.cachedData = cachedResponse.data;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        self.dataTask = [session dataTaskWithRequest:self.request];</span><br><span class="line">        self.executing = YES;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (self.dataTask) &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> clang diagnostic push</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> clang diagnostic ignored <span class="meta-string">"-Wunguarded-availability"</span></span></span><br><span class="line">        <span class="keyword">if</span> ([self.dataTask respondsToSelector:@selector(setPriority:)]) &#123;</span><br><span class="line">            <span class="keyword">if</span> (self.options &amp; SDWebImageDownloaderHighPriority) &#123;</span><br><span class="line">                self.dataTask.priority = NSURLSessionTaskPriorityHigh;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (self.options &amp; SDWebImageDownloaderLowPriority) &#123;</span><br><span class="line">                self.dataTask.priority = NSURLSessionTaskPriorityLow;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> clang diagnostic pop</span></span><br><span class="line">        [self.dataTask resume];</span><br><span class="line">        <span class="keyword">for</span> (SDWebImageDownloaderProgressBlock progressBlock in [self callbacksForKey:kProgressCallbackKey]) &#123;</span><br><span class="line">            progressBlock(<span class="number">0</span>, NSURLResponseUnknownLength, self.request.URL);</span><br><span class="line">        &#125;</span><br><span class="line">        __<span class="function">weak <span class="title">typeof</span><span class="params">(self)</span> weakSelf </span>= self;</span><br><span class="line">        dispatch_async(dispatch_get_main_queue(), ^&#123;</span><br><span class="line">            [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadStartNotification object:weakSelf];</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        [self callCompletionBlocksWithError:[NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorUnknown userInfo:@&#123;NSLocalizedDescriptionKey : @<span class="string">"Task can't be initialized"</span>&#125;]];</span><br><span class="line">        [self done];</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> SD_UIKIT</span></span><br><span class="line">    Class UIApplicationClass = NSClassFromString(@<span class="string">"UIApplication"</span>);</span><br><span class="line">    <span class="keyword">if</span>(!UIApplicationClass || ![UIApplicationClass respondsToSelector:@selector(sharedApplication)]) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (self.backgroundTaskId != UIBackgroundTaskInvalid) &#123;</span><br><span class="line">        UIApplication * app = [UIApplication performSelector:@selector(sharedApplication)];</span><br><span class="line">        [app endBackgroundTask:self.backgroundTaskId];</span><br><span class="line">        self.backgroundTaskId = UIBackgroundTaskInvalid;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>首先是查看cancelled属性，如果是true,直接复位返回。然后看是否支持后台任务并且设置了需要后台任务支持的就添加后台任务超时处理。<br>然后是获取session和URLCache中缓存的数据，再根据传入的request新建dataTask，设置优先级，如果设置了progresscallback就调用一次progress是0的调用并发送通知,之后是取消刚刚创建的后台任务</p>
+<p>然后来看下网络请求的回调方法:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)URLSession:(NSURLSession *)session</span><br><span class="line">          dataTask:(NSURLSessionDataTask *)dataTask</span><br><span class="line">didReceiveResponse:(NSURLResponse *)response</span><br><span class="line"> completionHandler:(<span class="keyword">void</span> (^)(NSURLSessionResponseDisposition disposition))completionHandler</span><br></pre></td></tr></table></figure>
+<p>这边的逻辑也比较简单，主要是对一个304的特殊处理，如果上面没有获取到cachedata会把304当成cancel处理</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data</span><br></pre></td></tr></table></figure>
+<p>这个方法的也没啥复杂的就是计算下进度，然后在看看是否使用渐进式的解码方式来解码图片数据(解码以后再说吧，不知道想不想看。。。。)</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error</span><br></pre></td></tr></table></figure>
+<p>失败的处理很简单我们就别看了，我们看看成功的处理<br>首先获取成功的回调block，如果获取到的数据和urlcache数据是一致的，并且使用了只是用cache的配置的话，就会调用空图片和finish为true的回调<br>其他情况下会在单独解码线程queue中做从imageData转换出图片这边可以用ImageIO来获取图片的方向，并创建出key,并根据url是否包含@2x这种字符串,设置图片的scale<br>之后根据是否需要解码图片来解码图片。</p>
+<p>再来看下<code>SDWebImageDownloader</code>类。<br>首先看到的是一个<code>initialize</code>方法，在其中添加了下载开始和停止的通知处理，然后我们可以看到这个类应该是一个单例有一个<code>shareDownloader</code>的方法，之后是两个初始化方法。<br>看下<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">- (nullable SDWebImageDownloadToken *)addProgressCallback:(SDWebImageDownloaderProgressBlock)progressBlock</span><br><span class="line">                                           completedBlock:(SDWebImageDownloaderCompletedBlock)completedBlock</span><br><span class="line">                                                   forURL:(nullable NSURL *)url</span><br><span class="line">                                           createCallback:(SDWebImageDownloaderOperation *(^)(<span class="keyword">void</span>))createCallback &#123;</span><br><span class="line">    <span class="comment">// The URL will be used as the key to the callbacks dictionary so it cannot be nil. If it is nil immediately call the completed block with no image or data.</span></span><br><span class="line">    <span class="keyword">if</span> (url == nil) &#123;</span><br><span class="line">        <span class="keyword">if</span> (completedBlock != nil) &#123;</span><br><span class="line">            completedBlock(nil, nil, nil, NO);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> nil;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    LOCK(self.operationsLock);</span><br><span class="line">    SDWebImageDownloaderOperation *operation = [self.URLOperations objectForKey:url];</span><br><span class="line">    <span class="keyword">if</span> (!operation) &#123;</span><br><span class="line">        operation = createCallback();</span><br><span class="line">        __<span class="function">weak <span class="title">typeof</span><span class="params">(self)</span> wself </span>= self;</span><br><span class="line">        operation.completionBlock = ^&#123;</span><br><span class="line">            __strong typeof(wself) sself = wself;</span><br><span class="line">            <span class="keyword">if</span> (!sself) &#123;</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            LOCK(sself.operationsLock);</span><br><span class="line">            [sself.URLOperations removeObjectForKey:url];</span><br><span class="line">            UNLOCK(sself.operationsLock);</span><br><span class="line">        &#125;;</span><br><span class="line">        [self.URLOperations setObject:operation forKey:url];</span><br><span class="line">        <span class="comment">// Add operation to operation queue only after all configuration done according to Apple's doc.</span></span><br><span class="line">        <span class="comment">// `addOperation:` does not synchronously execute the `operation.completionBlock` so this will not cause deadlock.</span></span><br><span class="line">        [self.downloadQueue addOperation:operation];</span><br><span class="line">    &#125;</span><br><span class="line">    UNLOCK(self.operationsLock);</span><br><span class="line"></span><br><span class="line">    id downloadOperationCancelToken = [operation addHandlersForProgress:progressBlock completed:completedBlock];</span><br><span class="line">    </span><br><span class="line">    SDWebImageDownloadToken *token = [SDWebImageDownloadToken <span class="keyword">new</span>];</span><br><span class="line">    token.downloadOperation = operation;</span><br><span class="line">    token.url = url;</span><br><span class="line">    token.downloadOperationCancelToken = downloadOperationCancelToken;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> token;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这边重要的方法其实就是这个<code>createCallback</code>方法来创建这个<code>operation</code>的方法。来看下这个创建的block的实现:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">__strong __typeof (wself) sself = wself;</span><br><span class="line">NSTimeInterval timeoutInterval = sself.downloadTimeout;</span><br><span class="line"><span class="keyword">if</span> (timeoutInterval == <span class="number">0.0</span>) &#123;</span><br><span class="line">	timeoutInterval = <span class="number">15.0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// In order to prevent from potential duplicate caching (NSURLCache + SDImageCache) we disable the cache for image requests if told otherwise</span></span><br><span class="line">NSURLRequestCachePolicy cachePolicy = options &amp; SDWebImageDownloaderUseNSURLCache ? NSURLRequestUseProtocolCachePolicy : NSURLRequestReloadIgnoringLocalCacheData;</span><br><span class="line">NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url</span><br><span class="line">															cachePolicy:cachePolicy</span><br><span class="line">														timeoutInterval:timeoutInterval];</span><br><span class="line"></span><br><span class="line">request.HTTPShouldHandleCookies = (options &amp; SDWebImageDownloaderHandleCookies);</span><br><span class="line">request.HTTPShouldUsePipelining = YES;</span><br><span class="line"><span class="keyword">if</span> (sself.headersFilter) &#123;</span><br><span class="line">	request.allHTTPHeaderFields = sself.headersFilter(url, [sself allHTTPHeaderFields]);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">	request.allHTTPHeaderFields = [sself allHTTPHeaderFields];</span><br><span class="line">&#125;</span><br><span class="line">SDWebImageDownloaderOperation *operation = [[sself.operationClass alloc] initWithRequest:request inSession:sself.session options:options];</span><br><span class="line">operation.shouldDecompressImages = sself.shouldDecompressImages;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (sself.urlCredential) &#123;</span><br><span class="line">	operation.credential = sself.urlCredential;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (sself.username &amp;&amp; sself.password) &#123;</span><br><span class="line">	operation.credential = [NSURLCredential credentialWithUser:sself.username password:sself.password persistence:NSURLCredentialPersistenceForSession];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (options &amp; SDWebImageDownloaderHighPriority) &#123;</span><br><span class="line">	operation.queuePriority = NSOperationQueuePriorityHigh;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (options &amp; SDWebImageDownloaderLowPriority) &#123;</span><br><span class="line">	operation.queuePriority = NSOperationQueuePriorityLow;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (sself.executionOrder == SDWebImageDownloaderLIFOExecutionOrder) &#123;</span><br><span class="line">	<span class="comment">// Emulate LIFO execution order by systematically adding new operations as last operation's dependency</span></span><br><span class="line">	[sself.lastAddedOperation addDependency:operation];</span><br><span class="line">	sself.lastAddedOperation = operation;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> operation;</span><br></pre></td></tr></table></figure>
+<p>这边可以看到创建operation时把self.session传进去，这样就理解了这边所有的代理方法都走到operation代理方法的原因了，因为operation礼拜呢的session就是我们这边传入的session,其他的都是一些参数的传递，没有什么好说的</p>
+<p>下载的部分大概就这么多吧。<br>== 未完待续 ==</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://www.firegg.top/2018/03/19/Aspects源码解析/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1677,7 +1861,7 @@ add_executable (Hello Hello.c)</code></p>
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-count">7</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -1721,7 +1905,9 @@ add_executable (Hello Hello.c)</code></p>
                     
                       
                     
-                    <span class="site-state-item-count">6</span>
+                      
+                    
+                    <span class="site-state-item-count">7</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
